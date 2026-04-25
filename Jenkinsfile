@@ -15,13 +15,15 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'mvn -B test'
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh 'mvn -B test'
+                }
             }
         }
 
         stage('Publish Test Results') {
             steps {
-                junit '**/target/surefire-reports/*.xml'
+                junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
             }
         }
     }
@@ -47,24 +49,22 @@ pipeline {
                     returnStdout: true
                 ).trim()
 
-                if (!reportList) {
-                    reportList = sh(
-                        script: "find ${env.WORKSPACE} -path '*/target/surefire-reports/*.xml' -type f 2>/dev/null | sort -u",
-                        returnStdout: true
-                    ).trim()
-                }
-
                 reportList.split('\n').findAll { it }.each { path ->
                     def cleanedPath = path.replaceFirst('^\\.\\/', '')
-                    def reportFile = path.startsWith('/') ? new File(path) : new File("${env.WORKSPACE}", cleanedPath)
-                    def suite = new XmlSlurper().parse(reportFile)
-                    suite.testcase.each { tc ->
+                    def xml = readFile(file: cleanedPath)
+                    def testcases = (xml =~ /(?s)<testcase\b[^>]*(?:\/>|>.*?<\/testcase>)/)
+                    testcases.each { match ->
+                        def testcase = match[0]
                         total++
-                        def name = "${tc.@classname}.${tc.@name}"
-                        if (tc.failure.size() > 0 || tc.error.size() > 0) {
+                        def classMatch = (testcase =~ /classname="([^"]*)"/)
+                        def testMatch = (testcase =~ /name="([^"]*)"/)
+                        def className = classMatch.find() ? classMatch.group(1) : ""
+                        def testName = testMatch.find() ? testMatch.group(1) : "unknown"
+                        def name = className ? "${className}.${testName}" : testName
+                        if (testcase.contains("<failure") || testcase.contains("<error")) {
                             failed++
                             details += "${name} - FAILED\n"
-                        } else if (tc.skipped.size() > 0) {
+                        } else if (testcase.contains("<skipped")) {
                             skipped++
                             details += "${name} - SKIPPED\n"
                         } else {
@@ -72,6 +72,10 @@ pipeline {
                             details += "${name} - PASSED\n"
                         }
                     }
+                }
+
+                if (!details) {
+                    details = "No Surefire test report was found.\n"
                 }
 
                 def emailBody = """Test Summary (Build #${env.BUILD_NUMBER})

@@ -26,12 +26,15 @@ class LoginTest {
     @Test
     void testLoginWithIncorrectCredentials() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless=new");
+        options.addArguments("--headless");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-software-rasterizer");
         options.addArguments("--window-size=1920,1080");
-        options.addArguments("--remote-debugging-port=0");
+        options.addArguments("--remote-debugging-pipe");
+        options.addArguments("--user-data-dir=/tmp/chrome-user-data-" + System.nanoTime());
 
         driver = new ChromeDriver(options);
         driver.navigate().to("http://103.139.122.250:4000/login");
