@@ -47,7 +47,6 @@ class LoginTest {
         options.addArguments("--password-store=basic");
         options.addArguments("--use-mock-keychain");
         options.addArguments("--window-size=1920,1080");
-        options.addArguments("--remote-debugging-pipe");
         options.addArguments("--user-data-dir=/tmp/chrome-user-data-" + System.nanoTime());
 
         driver = new ChromeDriver(options);
