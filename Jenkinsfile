@@ -13,6 +13,33 @@ pipeline {
             }
         }
 
+        stage('Chrome Smoke Test') {
+            steps {
+                sh '''
+                    set -eux
+                    google-chrome --version
+                    chromedriver --version
+                    timeout 30s google-chrome \
+                      --headless \
+                      --no-sandbox \
+                      --disable-setuid-sandbox \
+                      --disable-dev-shm-usage \
+                      --disable-gpu \
+                      --disable-software-rasterizer \
+                      --disable-background-networking \
+                      --disable-component-update \
+                      --disable-default-apps \
+                      --disable-features=TranslateUI,MediaRouter,OptimizationHints,VizDisplayCompositor \
+                      --disable-renderer-backgrounding \
+                      --disable-ipc-flooding-protection \
+                      --no-first-run \
+                      --no-default-browser-check \
+                      --user-data-dir=/tmp/chrome-smoke-${BUILD_NUMBER} \
+                      --dump-dom about:blank
+                '''
+            }
+        }
+
         stage('Test') {
             steps {
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {

@@ -33,9 +33,13 @@ class LoginTest {
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-extensions");
         options.addArguments("--disable-software-rasterizer");
+        options.addArguments("--disable-background-timer-throttling");
         options.addArguments("--disable-background-networking");
         options.addArguments("--disable-component-update");
         options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-features=TranslateUI,MediaRouter,OptimizationHints,VizDisplayCompositor");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-ipc-flooding-protection");
         options.addArguments("--disable-sync");
         options.addArguments("--metrics-recording-only");
         options.addArguments("--no-first-run");
