@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'markhobson/maven-chrome'
-            args '-u root:root -v /var/lib/jenkins/.m2:/root/.m2'
+            args '--shm-size=2g -u root:root -v /var/lib/jenkins/.m2:/root/.m2'
         }
     }
 
@@ -42,9 +42,22 @@ pipeline {
                 int skipped = 0
                 def details = ""
 
-                def reportFiles = findFiles(glob: '**/target/surefire-reports/*.xml')
-                reportFiles.each { file ->
-                    def suite = new XmlSlurper().parse(new File(file.path))
+                def reportList = sh(
+                    script: "find . -path '*/target/surefire-reports/*.xml' -type f 2>/dev/null | sort -u",
+                    returnStdout: true
+                ).trim()
+
+                if (!reportList) {
+                    reportList = sh(
+                        script: "find ${env.WORKSPACE} -path '*/target/surefire-reports/*.xml' -type f 2>/dev/null | sort -u",
+                        returnStdout: true
+                    ).trim()
+                }
+
+                reportList.split('\n').findAll { it }.each { path ->
+                    def cleanedPath = path.replaceFirst('^\\.\\/', '')
+                    def reportFile = path.startsWith('/') ? new File(path) : new File("${env.WORKSPACE}", cleanedPath)
+                    def suite = new XmlSlurper().parse(reportFile)
                     suite.testcase.each { tc ->
                         total++
                         def name = "${tc.@classname}.${tc.@name}"

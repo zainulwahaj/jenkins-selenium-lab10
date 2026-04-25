@@ -28,18 +28,28 @@ class LoginTest {
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("--remote-debugging-port=0");
+        options.addArguments("--user-data-dir=/tmp/chrome-user-data");
 
         driver = new ChromeDriver(options);
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
         driver.navigate().to("http://103.139.122.250:4000/");
 
-        driver.findElement(By.name("email")).sendKeys("qasim@malik.com");
-        driver.findElement(By.name("password")).sendKeys("abcdefg");
-        driver.findElement(By.id("m_login_signin_submit")).click();
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        WebElement email = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("email")));
+        WebElement password = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("password")));
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        WebElement errorElement = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div[1]/div/div/div/div[2]/form/div[1]")));
+        email.clear();
+        email.sendKeys("qasim@malik.com");
+        password.clear();
+        password.sendKeys("abcdefg");
+
+        WebElement signIn = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@type='submit' and contains(., 'Sign In')]")));
+        signIn.click();
+
+        WebElement errorElement = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[contains(normalize-space(.),'Incorrect email or password')]")));
 
         String errorText = errorElement.getText();
         Assertions.assertTrue(errorText.contains("Incorrect email or password"));
