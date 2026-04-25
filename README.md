@@ -4,7 +4,7 @@ This project contains a Maven test suite using JUnit 5 and Selenium for login va
 
 ## Test case
 - Test class: `src/test/java/com/lab10/LoginTest.java`
-- Scenario: incorrect credentials should show `Incorrect email or password`
+- Scenario: incorrect credentials should show `Invalid login credentials`
 
 ## Local test run
 1. Install Java 17+ and Maven.

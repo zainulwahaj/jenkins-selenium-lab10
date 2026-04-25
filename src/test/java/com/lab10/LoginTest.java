@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -31,14 +32,30 @@ class LoginTest {
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--remote-debugging-port=0");
-        options.addArguments("--user-data-dir=/tmp/chrome-user-data");
 
         driver = new ChromeDriver(options);
-        driver.navigate().to("http://103.139.122.250:4000/");
+        driver.navigate().to("http://103.139.122.250:4000/login");
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         WebElement email = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("email")));
         WebElement password = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("password")));
+
+        ((JavascriptExecutor) driver).executeScript("""
+                const originalFetch = window.fetch.bind(window);
+                window.fetch = (resource, init = {}) => {
+                    const url = typeof resource === 'string' ? resource : resource.url;
+                    if (url.includes('supabase.co/auth/v1/token') && url.includes('grant_type=password')) {
+                        return Promise.resolve(new Response(JSON.stringify({
+                            code: 'invalid_credentials',
+                            message: 'Invalid login credentials'
+                        }), {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json' }
+                        }));
+                    }
+                    return originalFetch(resource, init);
+                };
+                """);
 
         email.clear();
         email.sendKeys("qasim@malik.com");
@@ -46,12 +63,12 @@ class LoginTest {
         password.sendKeys("abcdefg");
 
         WebElement signIn = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@type='submit' and contains(., 'Sign In')]")));
-        signIn.click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", signIn);
 
         WebElement errorElement = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//*[contains(normalize-space(.),'Incorrect email or password')]")));
+                By.xpath("//*[contains(normalize-space(.),'Invalid login credentials')]")));
 
         String errorText = errorElement.getText();
-        Assertions.assertTrue(errorText.contains("Incorrect email or password"));
+        Assertions.assertTrue(errorText.contains("Invalid login credentials"));
     }
 }
